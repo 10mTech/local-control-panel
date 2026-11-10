@@ -1,4 +1,4 @@
-module local-control-panel
+module github.com/10mTech/local-control-panel
 
 go 1.24.2
 

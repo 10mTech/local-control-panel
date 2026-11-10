@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"local-control-panel/internal/safety"
-	"local-control-panel/internal/scan"
+	"github.com/10mTech/local-control-panel/internal/safety"
+	"github.com/10mTech/local-control-panel/internal/scan"
 )
 
 // CanTrash reports why a project can't be moved to the Trash, or nil.

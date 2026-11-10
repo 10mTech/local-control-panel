@@ -16,8 +16,8 @@ import (
 
 	"github.com/oklog/ulid/v2"
 
-	"local-control-panel/internal/audit"
-	"local-control-panel/internal/scan"
+	"github.com/10mTech/local-control-panel/internal/audit"
+	"github.com/10mTech/local-control-panel/internal/scan"
 )
 
 // gitRun runs git without a terminal. It starts in its own session, so

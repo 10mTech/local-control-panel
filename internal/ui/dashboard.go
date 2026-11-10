@@ -8,8 +8,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 
-	"local-control-panel/internal/safety"
-	"local-control-panel/internal/scan"
+	"github.com/10mTech/local-control-panel/internal/safety"
+	"github.com/10mTech/local-control-panel/internal/scan"
 )
 
 const sideMinWidth = 120 // below this the side panel is hidden

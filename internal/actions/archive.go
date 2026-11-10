@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"local-control-panel/internal/safety"
-	"local-control-panel/internal/scan"
+	"github.com/10mTech/local-control-panel/internal/safety"
+	"github.com/10mTech/local-control-panel/internal/scan"
 )
 
 // ArchiveMove is where archive or restore would move a project.

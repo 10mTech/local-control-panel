@@ -9,10 +9,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 
-	"local-control-panel/internal/actions"
-	"local-control-panel/internal/herdr"
-	"local-control-panel/internal/safety"
-	"local-control-panel/internal/scan"
+	"github.com/10mTech/local-control-panel/internal/actions"
+	"github.com/10mTech/local-control-panel/internal/herdr"
+	"github.com/10mTech/local-control-panel/internal/safety"
+	"github.com/10mTech/local-control-panel/internal/scan"
 )
 
 type (

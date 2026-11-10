@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"local-control-panel/internal/safety"
+	"github.com/10mTech/local-control-panel/internal/safety"
 )
 
 // MinVersion is the oldest herdr whose JSON replies this adapter was written against.

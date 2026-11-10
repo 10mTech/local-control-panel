@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"local-control-panel/internal/safety"
-	"local-control-panel/internal/scan"
+	"github.com/10mTech/local-control-panel/internal/safety"
+	"github.com/10mTech/local-control-panel/internal/scan"
 )
 
 // trashBin is macOS's own trash command (macOS 15+). Cleanup moves folders to

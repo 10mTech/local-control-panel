@@ -10,8 +10,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 
-	"local-control-panel/internal/actions"
-	"local-control-panel/internal/safety"
+	"github.com/10mTech/local-control-panel/internal/actions"
+	"github.com/10mTech/local-control-panel/internal/safety"
 )
 
 func runsTick() tea.Cmd {
