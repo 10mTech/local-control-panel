@@ -8,6 +8,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
-- Project documentation and community files: README, contributing guide, security policy, code of conduct, agent instructions, and GitHub issue and pull request templates.
+- Project documentation and community files.
+- The panel: one dashboard for every project in a folder, with one-key herdr actions, git fetch, pull and init, clean to the Trash, archive and restore.
+- Hash-chained audit log with secrets masked.
+- Config follows `XDG_CONFIG_HOME` and `XDG_STATE_HOME`, and reports unknown keys.
 
 [Unreleased]: https://github.com/10mTech/local-control-panel/commits/main
