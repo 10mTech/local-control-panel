@@ -1,0 +1,26 @@
+name: Bug report
+description: Something is broken or behaves unexpectedly.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For security problems, don't use this form; see SECURITY.md.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Version, environment and logs
+      description: Commit, macOS and herdr versions, plus any output or screenshots. Remove tokens, keys, personal data and home paths first.
