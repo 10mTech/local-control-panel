@@ -24,9 +24,9 @@ Build instructions will be added with the Go code.
 1. Fork the repo and create a branch from `main`, e.g. `fix/stop-pid-check`.
 2. Keep the change small and focused: one feature or fix per pull request.
 3. Follow the existing style in the package you're touching.
-4. Add or update tests where you can. There is no test suite yet, so tests for the safety, audit and scan code are very welcome.
+4. Add or update tests where you can. Tests for the safety, audit and actions code are especially welcome.
 5. Update the docs and [CHANGELOG.md](CHANGELOG.md) (under **Unreleased**) for anything users would notice.
-6. Run the checks: `gofmt -l .` (prints nothing), `go mod tidy -diff`, `go vet ./...`, `go build ./...`, `go test ./...`.
+6. Run the checks: `gofmt -l .` (prints nothing), `go mod tidy -diff`, `go vet ./...`, `go build ./...`, `go test ./...`. CI runs the same checks (tests with `-race`) plus `govulncheck` on every PR.
 
 New dependencies need a reason: say in the PR why it's needed and what you considered instead.
 
