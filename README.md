@@ -11,7 +11,7 @@ action goes into an append-only, hash-chained audit log that you can read inside
 lcp          # run from any terminal; actions need herdr
 ```
 
-> **Status: pre-release.** No code is published yet. macOS only. Expect rough edges and breaking changes before 1.0.
+> **Status: pre-release.** macOS only. Expect rough edges and breaking changes before 1.0.
 
 ## Features
 
@@ -36,8 +36,8 @@ Prebuilt binaries are coming with the first release.
 
 ## Documentation
 
-Full documentation (screens, keys, safety rules, audit log, configuration) is coming soon on the
-project website.
+Full documentation (screens, keys, safety rules, audit log, configuration) is on the
+[project website](https://10mtech.github.io/local-control-panel/). Its source is [docs/index.html](docs/index.html).
 
 ## Contributing
 
