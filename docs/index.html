@@ -752,6 +752,18 @@ Total <span class="k-peach">20M</span><span class="k-dim">. Reinstall or rebuild
           </dl>
         </div>
       </li>
+      <li>
+        <div>
+          <h3>Uninstall</h3>
+          <p>Stop the dev servers the panel started (<code>s</code> on the Runs screen), quit, and move the binary to the Trash. Removing the config and state folders is optional; keep the state folder if you want the audit history.</p>
+          <div class="code">
+<pre id="code-uninstall"><span class="k-dim">$</span> trash "$(go env GOPATH)/bin/lcp"
+<span class="k-dim">$</span> trash ~/.config/local-control-panel ~/.local/state/local-control-panel</pre>
+            <button type="button" class="copy" data-copy="code-uninstall">copy</button>
+          </div>
+          <p style="margin-top:14px">If you set <code>XDG_CONFIG_HOME</code>, <code>XDG_STATE_HOME</code> or <code>state_dir</code>, remove those folders instead. Nothing lives inside your projects, and anything lcp cleaned, trashed or archived stays where it is.</p>
+        </div>
+      </li>
     </ol>
   </div>
 </section>

@@ -13,6 +13,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Hash-chained audit log with secrets masked.
 - Config follows `XDG_CONFIG_HOME` and `XDG_STATE_HOME`, and reports unknown keys.
 - Project website in `docs/`, served by GitHub Pages.
+- Uninstall steps in the README and on the website.
 - The binary is `lcp`; install it with `go install github.com/10mTech/local-control-panel/cmd/lcp@latest`.
 
 [Unreleased]: https://github.com/10mTech/local-control-panel/commits/main
