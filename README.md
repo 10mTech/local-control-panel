@@ -34,6 +34,27 @@ go install github.com/10mTech/local-control-panel/cmd/lcp@latest
 
 Prebuilt binaries are coming with the first release.
 
+## Uninstall
+
+1. Stop any dev servers the panel started (`s` on the Runs screen, `L`), then quit with `q`.
+2. Remove the binary:
+
+   ```bash
+   trash "$(go env GOPATH)/bin/lcp"
+   ```
+
+3. Optional: remove the config and the state folder (audit log, run logs, caches). Keep the state
+   folder if you want the audit history.
+
+   ```bash
+   trash ~/.config/local-control-panel ~/.local/state/local-control-panel
+   ```
+
+   If you set `XDG_CONFIG_HOME`, `XDG_STATE_HOME` or `state_dir`, remove those folders instead.
+
+lcp keeps nothing inside your projects. Anything it cleaned or trashed stays in the Trash, and
+archived projects stay in `archive/`. Uninstalling doesn't touch them.
+
 ## Documentation
 
 Full documentation (screens, keys, safety rules, audit log, configuration) is on the
