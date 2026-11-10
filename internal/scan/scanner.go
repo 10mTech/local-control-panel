@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"local-control-panel/internal/config"
+	"github.com/10mTech/local-control-panel/internal/config"
 )
 
 type Scanner struct {

@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"local-control-panel/internal/audit"
+	"github.com/10mTech/local-control-panel/internal/audit"
 )
 
 // PruneRuns keeps the runs folder bounded. Finished runs and fetch logs past

@@ -8,8 +8,8 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
-	"local-control-panel/internal/actions"
-	"local-control-panel/internal/scan"
+	"github.com/10mTech/local-control-panel/internal/actions"
+	"github.com/10mTech/local-control-panel/internal/scan"
 )
 
 type (

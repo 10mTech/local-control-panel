@@ -8,7 +8,7 @@ Instructions for AI coding agents (Claude Code, Codex, Cursor, Copilot, Gemini C
 
 ## Boundaries
 
-- `cmd/local-control-panel` is the program; everything else is in `internal/` (`config`, `scan`, `actions`, `herdr`, `safety`, `audit`, `debuglog`, `ui`).
+- `cmd/lcp` is the program; everything else is in `internal/` (`config`, `scan`, `actions`, `herdr`, `safety`, `audit`, `debuglog`, `ui`).
 - `scan` only reads the system. Only `actions` change it.
 - Only `internal/herdr` calls herdr. Only `internal/audit` writes the audit log.
 - `scan` and `actions` contain no UI code.

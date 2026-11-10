@@ -7,7 +7,7 @@ import (
 	"slices"
 	"sync"
 
-	"local-control-panel/internal/scan"
+	"github.com/10mTech/local-control-panel/internal/scan"
 )
 
 // DevCommand is the command "run" will use for a project and where it came from.

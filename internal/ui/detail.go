@@ -9,7 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"local-control-panel/internal/scan"
+	"github.com/10mTech/local-control-panel/internal/scan"
 )
 
 func (m *Model) detailSize() (int, int) {

@@ -26,7 +26,13 @@ lcp          # run from any terminal; actions need herdr
 
 ## Install
 
-Coming with the first release.
+Needs Go 1.24 or newer, on macOS.
+
+```bash
+go install github.com/10mTech/local-control-panel/cmd/lcp@latest
+```
+
+Prebuilt binaries are coming with the first release.
 
 ## Documentation
 
