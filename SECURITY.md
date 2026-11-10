@@ -27,11 +27,13 @@ want to hear about:
 - Stop signalling a process the panel didn't start, or a reused PID.
 - A project name, path or config value that ends up run as shell or as extra arguments.
 - Anything that makes the panel push, reset, check out, stash, clean or force in git.
-- Changing or removing audit lines without the hash chain reporting it, or secrets written unmasked
+- Changing or removing audit lines before the newest one without the hash chain reporting it, or secrets written unmasked
   to the audit, run or debug logs.
 
 ## Out of scope
 
 - Attackers who can already run code as your user or edit your files.
 - Deleting the whole audit log. The hash chain makes edits and removals visible, not impossible.
+- Removing the newest lines from the end of the log, or rewriting the whole log with a fresh chain.
+  The chain is not anchored anywhere outside the log, so neither is detected.
 - Bugs in herdr, git, Docker or other tools the panel calls. Report those upstream.
