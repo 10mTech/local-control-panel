@@ -1,5 +1,6 @@
 # Build output
 /bin/
+/lcp
 /dist/
 *.exe
 *.test
