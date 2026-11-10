@@ -1,0 +1,40 @@
+# Build output
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+
+# Go
+/vendor/
+go.work
+go.work.sum
+coverage.txt
+coverage.html
+*.prof
+
+# Secrets and local config (never commit)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local panel state (audit logs, run logs, caches)
+/state/
+*.jsonl
+*.log
+!**/testdata/**
+
+# Editors and tools
+.idea/
+.vscode/
+*.swp
+*.swo
+.claude/settings.local.json
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
