@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>local-control-panel</title>
+<meta name="description" content="lcp is a keyboard-driven terminal panel for your projects folder. Stack, git state, running servers and disk use for every project on one screen, with one-key actions and a hash-chained audit log.">
+<meta property="og:title" content="local-control-panel">
+<meta property="og:description" content="Every project on one screen. A keyboard-driven terminal panel for macOS, with one-key actions and a hash-chained audit log.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://10mtech.github.io/local-control-panel/">
+<meta property="og:image" content="https://10mtech.github.io/local-control-panel/og.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="local-control-panel: every project on one screen. A keyboard-driven terminal panel for macOS.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='28' height='28' rx='7' fill='%231e1e2e' stroke='%23cba6f7' stroke-width='2.5'/%3E%3Cpath d='M9 11l5 5-5 5' fill='none' stroke='%23cba6f7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M16 21h7' stroke='%23a6e3a1' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Geist+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: built like the panel itself. A key-driven tab bar on top, a real render as the hero,
+   then sections; terminal objects keep the panel's own Catppuccin Mocha colours in both themes. */
+:root {
+  --bg: #11111b;
+  --surface: #181825;
+  --raised: #1e1e2e;
+  --line: #313244;
+  --line-strong: #45475a;
+  --fg: #cdd6f4;
+  --muted: #a6adc8;
+  --faint: #8b8fa8;
+  --accent: #cba6f7;
+  --on-accent: #11111b;
+
+  --t-bg: #1e1e2e;
+  --t-edge: #181825;
+  --t-fg: #cdd6f4;
+  --t-sub: #a6adc8;
+  --t-dim: #6c7086;
+  --t-line: #45475a;
+  --t-sel: #313244;
+  --t-mauve: #cba6f7;
+  --t-blue: #89b4fa;
+  --t-green: #a6e3a1;
+  --t-yellow: #f9e2af;
+  --t-peach: #fab387;
+  --t-red: #f38ba8;
+  --t-sky: #89dceb;
+  --t-teal: #94e2d5;
+
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --step--1: 0.875rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.25rem;
+  --step-2: clamp(1.9rem, 1.2rem + 2.6vw, 3rem);
+  --step-3: clamp(2.7rem, 1.4rem + 5.2vw, 5.4rem);
+
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #eff1f5; --surface: #e6e9ef; --raised: #f9fafb; --line: #ccd0da; --line-strong: #acb0be;
+    --fg: #4c4f69; --muted: #5c5f77; --faint: #6c6f85; --accent: #8839ef; --on-accent: #ffffff;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #eff1f5; --surface: #e6e9ef; --raised: #f9fafb; --line: #ccd0da; --line-strong: #acb0be;
+  --fg: #4c4f69; --muted: #5c5f77; --faint: #6c6f85; --accent: #8839ef; --on-accent: #ffffff;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 var(--step-0)/1.6 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--bg);
+}
+a { color: inherit; }
+code, kbd, pre, textarea { font-family: var(--font-mono); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+.wrap {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+@media (min-width: 720px) {
+  .wrap { padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); }
+}
+
+/* ---------- tab bar (the panel's filter bar) ---------- */
+.bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.bar .wrap { display: flex; align-items: center; gap: 12px; padding-block: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; flex-shrink: 0; }
+.pill {
+  font: 700 0.9rem/1 var(--font-mono); background: var(--accent); color: var(--on-accent);
+  padding: 5px 8px; border-radius: 3px;
+}
+.brand-name { font: 500 0.875rem/1 var(--font-mono); color: var(--muted); }
+.tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+.tabs a {
+  font: 500 0.8125rem/1 var(--font-mono); text-decoration: none; color: var(--muted);
+  padding: 7px 9px; border-radius: 3px; background: var(--surface); white-space: nowrap;
+}
+.tabs a b { font-weight: 700; color: var(--faint); margin-right: 6px; }
+.tabs a:hover { color: var(--fg); }
+.tabs a[aria-current="true"] { background: var(--accent); color: var(--on-accent); }
+.tabs a[aria-current="true"] b { color: inherit; }
+.tabs a.gh { background: transparent; border: 1px solid var(--line-strong); }
+@media (max-width: 860px) { .brand-name { display: none; } }
+@media (max-width: 600px) {
+  .tabs a b { display: none; }
+  .tabs a { padding: 6px 7px; font-size: 0.75rem; }
+  .tabs .opt { display: none; }
+}
+
+/* ---------- hero ---------- */
+.hero { padding-block: clamp(40px, 7vw, 88px) 24px; }
+.eyebrow {
+  font: 500 0.78rem/1.4 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--faint); margin: 0 0 18px;
+}
+.eyebrow span { color: var(--accent); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 {
+  font-size: var(--step-3); font-weight: 820; font-stretch: 118%; line-height: 0.96;
+  letter-spacing: -0.025em; max-width: 13ch;
+}
+.lede { font-size: var(--step-1); line-height: 1.55; color: var(--muted); max-width: 62ch; margin: 26px 0 0; }
+.lede strong { color: var(--fg); font-weight: 500; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; align-items: center; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; font: 600 0.95rem/1 var(--font-body);
+  padding: 13px 18px; border-radius: 6px; text-decoration: none; border: 1px solid var(--line-strong);
+  color: var(--fg); background: transparent;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.06); }
+.keyhint { margin: 22px 0 0; font-size: var(--step--1); color: var(--faint); }
+kbd {
+  display: inline-block; min-width: 1.7em; text-align: center; font-size: 0.8em; font-weight: 500;
+  padding: 2px 6px 3px; border-radius: 4px; color: var(--fg); background: var(--surface);
+  border: 1px solid var(--line-strong); border-bottom-width: 2px; line-height: 1.35;
+}
+
+/* ---------- terminal ---------- */
+.term-fig { margin: 44px 0 0; }
+.term-tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.term-tabs button {
+  font: 500 0.8125rem/1 var(--font-mono); padding: 8px 11px; border-radius: 3px; cursor: pointer;
+  border: 0; color: var(--muted); background: var(--surface);
+}
+.term-tabs button[aria-selected="true"] { background: var(--t-blue); color: #11111b; font-weight: 700; }
+.term-tabs button kbd { font-size: 0.75rem; margin-right: 6px; background: transparent; border-color: currentColor; color: inherit; padding: 0 5px; }
+.term {
+  position: relative; container-type: inline-size; overflow: hidden;
+  background: var(--t-bg); color: var(--t-fg); border-radius: 10px;
+  border: 1px solid #313244;
+  box-shadow: 0 1px 0 #ffffff0d inset, 0 30px 80px -30px #000000aa;
+}
+.term .scroll { overflow-x: auto; padding: 14px 16px 16px; }
+.term pre {
+  margin: 0; font-size: clamp(6.5px, calc((100cqw - 32px) / 90.5), 13.5px); line-height: 1.3;
+  font-variant-ligatures: none; white-space: pre; width: max-content;
+}
+.term .w { font-weight: 700; }
+.term i { font-style: normal; display: inline-block; width: 1ch; text-align: center; line-height: 1; }
+.term .f0{color:#cba6f7}.term .b0{background:#cba6f7}
+.term .f1{color:#11111b}.term .b1{background:#11111b}
+.term .f2{color:#cdd6f3}.term .b2{background:#cdd6f3}
+.term .f3{color:#6c7086}.term .b3{background:#6c7086}
+.term .f4{color:#fab387}.term .b4{background:#fab387}
+.term .f5{color:#f9e2af}.term .b5{background:#f9e2af}
+.term .f6{color:#89dceb}.term .b6{background:#89dceb}
+.term .f7{color:#a6e3a1}.term .b7{background:#a6e3a1}
+.term .f8{color:#89b3fa}.term .b8{background:#89b3fa}
+.term .f9{color:#303244}.term .b9{background:#303244}
+.term .f10{color:#a6adc8}.term .b10{background:#a6adc8}
+.term .f11{color:#454759}.term .b11{background:#454759}
+.term .f12{color:#f38ba8}.term .b12{background:#f38ba8}
+.term::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 64px; pointer-events: none;
+  background: linear-gradient(to bottom, transparent, #cba6f71f 70%, #cba6f766 98%, transparent);
+  transform: translateY(-80px); animation: scan 1.1s 0.25s cubic-bezier(.4,.1,.3,1) 1 forwards;
+}
+@keyframes scan { to { transform: translateY(calc(100cqh + 20px)); opacity: 0.2; } }
+@media (prefers-reduced-motion: reduce) { .term::after { display: none; } }
+figcaption { margin-top: 12px; font-size: var(--step--1); color: var(--faint); }
+figcaption code { font-size: 0.92em; color: var(--muted); }
+
+/* ---------- sections ---------- */
+section.band { padding-block: clamp(64px, 9vw, 120px); border-top: 1px solid var(--line); scroll-margin-top: 56px; }
+.band.alt { background: var(--surface); }
+.sec-head { display: grid; gap: 16px; max-width: 760px; margin-bottom: clamp(36px, 5vw, 56px); }
+.sec-key { font: 500 0.78rem/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); display: flex; gap: 10px; align-items: center; }
+.sec-key kbd { font-size: 0.85rem; }
+h2 { font-size: var(--step-2); font-weight: 760; font-stretch: 112%; line-height: 1.04; letter-spacing: -0.018em; }
+.sec-head p { margin: 0; color: var(--muted); max-width: 64ch; }
+h3 { font-size: 1.08rem; font-weight: 680; font-stretch: 104%; line-height: 1.3; }
+p code, li code, td code, dd code { font-size: 0.86em; background: var(--raised); border: 1px solid var(--line); padding: 1px 5px; border-radius: 4px; }
+.band.alt p code, .band.alt li code, .band.alt td code { background: var(--bg); }
+
+/* chips: a single line of the panel */
+.chip {
+  display: block; font: 400 0.9rem/1.5 var(--font-mono); background: var(--t-bg); color: var(--t-fg);
+  border-radius: 6px; padding: 9px 12px; white-space: pre; overflow-x: auto; border: 1px solid #313244;
+}
+.k-dim { color: var(--t-dim); } .k-sub { color: var(--t-sub); } .k-mauve { color: var(--t-mauve); }
+.k-blue { color: var(--t-blue); } .k-green { color: var(--t-green); } .k-yellow { color: var(--t-yellow); }
+.k-peach { color: var(--t-peach); } .k-red { color: var(--t-red); } .k-sky { color: var(--t-sky); } .k-teal { color: var(--t-teal); } .k-b { font-weight: 700; }
+
+/* columns */
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 32px; }
+@media (max-width: 980px) { .cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+.col { display: grid; gap: 12px; align-content: start; min-width: 0; border-top: 1px solid var(--line-strong); padding-top: 16px; }
+.col-name { font: 700 0.78rem/1 var(--font-mono); letter-spacing: 0.08em; color: var(--faint); }
+.col p { margin: 0; color: var(--muted); font-size: 0.98rem; }
+
+.subgrid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; margin-top: 72px; }
+@media (max-width: 900px) { .subgrid { grid-template-columns: minmax(0, 1fr); } }
+.subgrid h3 { margin-bottom: 16px; }
+.filters { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; margin: 0; align-items: baseline; }
+.filters dt { font: 500 0.875rem/1 var(--font-mono); white-space: nowrap; }
+.filters dt kbd { margin-right: 8px; }
+.filters dd { margin: 0; color: var(--muted); font-size: 0.95rem; }
+.screens { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.screens li { display: grid; grid-template-columns: 3.2em 1fr; gap: 12px; align-items: baseline; color: var(--muted); font-size: 0.97rem; }
+.screens li strong { color: var(--fg); font-weight: 600; }
+.bands { margin-top: 18px; }
+
+/* keys */
+.keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; }
+@media (max-width: 980px) { .keys { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 640px) { .keys { grid-template-columns: minmax(0, 1fr); } }
+.keys > div { min-width: 0; }
+.keys h3 { margin-bottom: 4px; }
+.keys .note { margin: 0 0 14px; font-size: var(--step--1); color: var(--faint); }
+.keys table { border-collapse: collapse; width: 100%; }
+.keys td { padding: 8px 0; border-top: 1px solid var(--line); vertical-align: baseline; font-size: 0.95rem; color: var(--muted); }
+.keys td:first-child { width: 6.6em; white-space: nowrap; padding-right: 10px; }
+.keys kbd + kbd { margin-left: 3px; }
+
+/* safety */
+.safety { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); gap: 56px; align-items: start; }
+@media (max-width: 940px) { .safety { grid-template-columns: minmax(0, 1fr); } }
+.pane-wrap { position: sticky; top: 84px; min-width: 0; }
+@media (max-width: 940px) { .pane-wrap { position: static; } }
+.pane {
+  position: relative; background: var(--t-bg); color: var(--t-fg); border-radius: 10px;
+  padding: 10px; border: 1px solid #313244; box-shadow: 0 30px 70px -36px #000000aa;
+}
+.pane-box {
+  position: relative; border: 1px solid var(--t-mauve); border-radius: 8px; padding: 18px 16px 22px;
+  font: 400 0.86rem/1.55 var(--font-mono);
+}
+.pane-box pre { margin: 0; font: inherit; overflow-x: auto; }
+.pane-title, .pane-keys {
+  position: absolute; left: 14px; padding: 0 6px; background: var(--t-bg); font: 700 0.86rem/1 var(--font-mono);
+}
+.pane-title { top: -0.5em; color: var(--t-mauve); }
+.pane-keys { bottom: -0.5em; left: auto; right: 14px; color: var(--t-dim); font-weight: 400; }
+.pane-keys b { color: var(--t-mauve); }
+.rules { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 30px 32px; }
+@media (max-width: 620px) { .rules { grid-template-columns: minmax(0, 1fr); } }
+.rules li { display: grid; gap: 6px; align-content: start; }
+.rules p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+/* audit */
+.audit-grid { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 56px; align-items: start; }
+@media (max-width: 1000px) { .audit-grid { grid-template-columns: minmax(0, 1fr); } }
+.facts { list-style: none; padding: 0; margin: 0; display: grid; gap: 20px; }
+.facts li { display: grid; gap: 4px; }
+.facts p { margin: 0; color: var(--muted); font-size: 0.97rem; }
+.lab { min-width: 0; }
+.lab-term { background: var(--t-bg); color: var(--t-fg); border-radius: 10px; border: 1px solid #313244; overflow: hidden; box-shadow: 0 30px 70px -36px #000000aa; }
+.lab-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 12px 14px; font: 400 0.84rem/1.3 var(--font-mono); border-bottom: 1px solid var(--t-sel); }
+.lab-top .badge { background: var(--t-mauve); color: #11111b; font-weight: 700; padding: 3px 6px; border-radius: 2px; }
+.lab-top .ok { color: var(--t-green); } .lab-top .bad { color: var(--t-red); }
+.lab-file { color: var(--t-dim); margin-left: auto; }
+.lab label { display: block; padding: 10px 14px 0; font: 400 0.75rem/1 var(--font-mono); color: var(--t-dim); }
+.lab textarea {
+  display: block; width: 100%; height: 11.6em; resize: vertical; border: 0; margin: 0;
+  padding: 8px 14px 12px; background: var(--t-bg); color: var(--t-sub); font-size: 0.78rem; line-height: 1.75;
+  white-space: pre; overflow-x: auto; overflow-wrap: normal; tab-size: 2; color-scheme: dark;
+}
+.lab textarea:focus-visible { outline: 2px solid var(--t-mauve); outline-offset: -2px; border-radius: 0; }
+.chain { border-top: 1px solid var(--t-sel); overflow-x: auto; }
+.chain table { border-collapse: collapse; width: 100%; font: 400 0.8rem/1.45 var(--font-mono); white-space: nowrap; }
+.chain td { padding: 7px 14px 7px 0; border-bottom: 1px solid #262637; }
+.chain td:first-child { padding-left: 14px; color: var(--t-dim); width: 2.4em; }
+.chain tr:last-child td { border-bottom: 0; }
+.chain .ph { color: var(--t-dim); }
+.chain .act { color: var(--t-fg); }
+.chain .proj { color: var(--t-sub); }
+.chain .o-ok { color: var(--t-green); } .chain .o-failed { color: var(--t-red); } .chain .o-cancelled { color: var(--t-yellow); }
+.chain .hash { color: var(--t-dim); }
+.chain .yes { color: var(--t-green); } .chain .no { color: var(--t-red); }
+.chain tr.broken td { background: #f38ba812; }
+.lab-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.lab-actions button {
+  font: 500 0.875rem/1 var(--font-body); padding: 10px 14px; border-radius: 6px; cursor: pointer;
+  background: var(--raised); color: var(--fg); border: 1px solid var(--line-strong);
+}
+.lab-actions button:hover { border-color: var(--accent); }
+.lab-note { margin: 14px 0 0; font-size: var(--step--1); color: var(--faint); max-width: 70ch; }
+
+/* install */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 48px; counter-reset: step; max-width: 920px; }
+.steps > li { display: grid; grid-template-columns: 3rem minmax(0, 1fr); gap: 0 20px; counter-increment: step; }
+.steps > li::before {
+  content: counter(step); font: 800 1.9rem/1 var(--font-display); font-stretch: 118%; color: var(--accent);
+}
+.steps h3 { font-size: var(--step-1); margin-bottom: 10px; }
+.steps p { margin: 0 0 14px; color: var(--muted); max-width: 66ch; }
+.steps ul { margin: 0 0 14px; padding-left: 1.1em; color: var(--muted); display: grid; gap: 6px; }
+.code { position: relative; }
+.code pre {
+  margin: 0; background: var(--t-bg); color: var(--t-fg); border-radius: 8px; border: 1px solid #313244;
+  padding: 16px 18px; overflow-x: auto; font-size: 0.875rem; line-height: 1.65;
+}
+.copy {
+  position: absolute; top: 8px; right: 8px; font: 500 0.75rem/1 var(--font-mono); cursor: pointer;
+  padding: 7px 9px; border-radius: 4px; border: 1px solid var(--t-line); background: var(--t-edge); color: var(--t-sub);
+}
+.copy:hover { color: var(--t-fg); border-color: var(--t-mauve); }
+.flags { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 0; }
+.flags dt { font: 500 0.875rem/1.6 var(--font-mono); color: var(--fg); white-space: nowrap; }
+.flags dd { margin: 0; color: var(--muted); font-size: 0.95rem; }
+@media (max-width: 560px) { .flags { grid-template-columns: minmax(0, 1fr); gap: 2px; } .flags dd { margin-bottom: 10px; } }
+
+/* scope + footer */
+.scope { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px; }
+@media (max-width: 900px) { .scope { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 520px) { .scope { grid-template-columns: minmax(0, 1fr); } }
+.scope div { border-top: 1px solid var(--line-strong); padding-top: 14px; display: grid; gap: 6px; align-content: start; }
+.scope p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+footer { border-top: 1px solid var(--line); padding-block: 36px 48px; color: var(--faint); font-size: var(--step--1); }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; }
+footer .grow { flex: 1 1 auto; }
+footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="local-control-panel, back to top">
+      <span class="pill">lcp</span><span class="brand-name">local-control-panel</span>
+    </a>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#screens" data-key="1"><b>1</b>Screens</a>
+      <a href="#keys" data-key="2"><b>2</b>Keys</a>
+      <a href="#safety" data-key="3"><b>3</b>Safety</a>
+      <a href="#audit" data-key="4"><b>4</b>Audit</a>
+      <a href="#install" data-key="5"><b>5</b>Install</a>
+      <a class="gh" href="https://github.com/10mTech/local-control-panel">GitHub<span class="opt"> ↗</span></a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section class="hero" id="top">
+  <div class="wrap">
+    <p class="eyebrow"><span>lcp</span> · terminal panel for macOS · Go · pre-release</p>
+    <h1>Every project on one screen.</h1>
+    <p class="lede"><strong>lcp is a keyboard-driven terminal panel for the folder where your projects live.</strong>
+      It shows each project's stack, git state, running servers, disk use and age. One keystroke opens a project,
+      starts its dev server, pulls it, cleans its build folders or archives it. Every action goes into a
+      hash-chained audit log you can read inside the panel.</p>
+    <div class="cta">
+      <a class="btn primary" href="#install">Install lcp</a>
+      <a class="btn" href="https://github.com/10mTech/local-control-panel">Read the source</a>
+    </div>
+    <p class="keyhint">This page takes keys too: <kbd>1</kbd>–<kbd>5</kbd> jump to a section, <kbd>j</kbd> <kbd>k</kbd> scroll, <kbd>g</kbd> goes back to the top.</p>
+
+    <figure class="term-fig">
+      <div class="term-tabs" role="tablist" aria-label="Screen">
+        <button type="button" role="tab" id="tab-dashboard" aria-selected="true" aria-controls="screen-dashboard">Dashboard</button>
+        <button type="button" role="tab" id="tab-detail" aria-selected="false" aria-controls="screen-detail" tabindex="-1"><kbd>enter</kbd>notify-bot</button>
+      </div>
+      <div class="term">
+        <div class="scroll">
+          <pre id="screen-dashboard" role="img" aria-label="The lcp dashboard: a tree of 37 demo repos with stack, git, running, disk, build and age columns, and a side panel for the selected project."><span class="b0"> </span><span class="f1 b0 w">local-control-panel</span><span class="b0"> </span> <span class="f2">37 repos</span><span class="f3"> · </span><span class="f4">7 no git</span><span class="f3"> · </span><span class="f5">15 dirty</span><span class="f3"> · </span><span class="f6">2 unpushed</span><span class="f3"> · </span><span class="f7">1 running</span>                                               <span class="f3">scanned 20:21:59 in 214ms</span>
+<span class="b8"> </span><span class="f1 b8 w">1 All</span><span class="b8"> </span> <span class="b9"> </span><span class="f10 b9">2 Dirty 15</span><span class="b9"> </span> <span class="b9"> </span><span class="f10 b9">3 Unpushed 2</span><span class="b9"> </span> <span class="b9"> </span><span class="f10 b9">4 No git 7</span><span class="b9"> </span> <span class="b9"> </span><span class="f10 b9">5 Running 1</span><span class="b9"> </span> <span class="b9"> </span><span class="f10 b9">6 Reclaim 8</span><span class="b9"> </span> <span class="b9"> </span><span class="f10 b9">7 Not mine 22</span><span class="b9"> </span> <span class="b9"> </span><span class="f10 b9">8 No deps 17</span><span class="b9"> </span>                                <span class="f3">sort: </span><span class="f10">tree</span>
+<span class="f0">╭─ </span><span class="f0 w">Projects</span> <span class="f0">───────────────────────────────────────────────────────────────────────────────────────╮</span><span class="f11">╭─ </span><span class="f10">metrics-console</span> <span class="f11">──────────────────────────────╮</span>
+<span class="f0">│</span><span class="f3 w"> PROJECT                STACK           GIT                      RUNNING        DISK  BUILD   AGE </span><span class="f0">│</span><span class="f11">│</span> <span class="f3">path     </span> <span class="f2">metrics-console</span>                      <span class="f11">│</span>
+<span class="f0">│</span><span class="f2 b9 w">   metrics-console @de… Vite            main                                     20M    20M  15mo </span><span class="f0">│</span><span class="f11">│</span> <span class="f3">kind     </span> <span class="f10">git repo</span>                             <span class="f11">│</span>
+<span class="f0">│</span> <span class="f10 w"><i>▾</i> sandbox/</span>                             <span class="f3">2 repos</span>                                                   <span class="f0">│</span><span class="f11">│</span> <span class="f3">stack    </span> <span class="f10">Vite</span>                                 <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">    landing-demo</span><span class="f3"> no d…</span> <span class="f10">Next.js</span>         <span class="f10">main</span><span class="f3"> local</span>                              <span class="f10">180K</span>          <span class="f8">51d</span> <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f10 w">  <i>▾</i> portal-site/</span>                       <span class="f3">1 repo</span>                                                    <span class="f0">│</span><span class="f11">│</span> <span class="f3">branch   </span> <span class="f2">main</span>                                 <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">      frontend</span><span class="f3"> no deps</span> <span class="f10">Next.js</span>         <span class="f10">main</span>                                    <span class="f10">188K</span>          <span class="f8">2mo</span> <span class="f0">│</span><span class="f11">│</span> <span class="f3">upstream </span> <span class="f10">origin/main</span><span class="f3">  ↑0 ↓0</span>                   <span class="f11">│</span>
+<span class="f0">│</span> <span class="f10 w"><i>▾</i> katas-project/</span>                       <span class="f3">1 repo</span>                                                    <span class="f0">│</span><span class="f11">│</span> <span class="f3">changes  </span> <span class="f10">0 modified, 0 untracked</span>              <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">    katas-project</span><span class="f3"> no …</span> <span class="f10">Next.js</span>         <span class="f10">main</span><span class="f5"> <i>✚</i>2</span><span class="f3"> ?2</span>                               <span class="f10">12M</span>    <span class="f10">12M</span>   <span class="f5">8mo</span> <span class="f0">│</span><span class="f11">│</span> <span class="f3">commit   </span> <span class="f10">15mo ago</span><span class="f3"> · </span><span class="f2">commit dist for static ho…</span><span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">  notify-bot</span>           <span class="f10">Node+Docker</span>     <span class="f10">main</span>                     <span class="f7"><i>●</i> :4100</span>         <span class="f10">22M</span>    <span class="f10">22M</span>    <span class="f7">2d</span> <span class="f0">│</span><span class="f11">│</span> <span class="f3">remote   </span> <span class="f10">git@github.com:demo-dev-archive/metr…</span><span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">  tool-starter</span>                         <span class="f10">main</span><span class="f3"> ?1</span>                                 <span class="f10">160K</span>         <span class="f12">20mo</span> <span class="f0">│</span><span class="f11">│</span> <span class="f3">owner    </span> <span class="f2">demo-dev-archive</span><span class="f3"> · </span><span class="f4">not yours</span>         <span class="f11">│</span>
+<span class="f0">│</span> <span class="f10 w"><i>▾</i> demo-client/</span>                         <span class="f3">9 repos</span>                                                   <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">    acme-document</span><span class="f3"> @ac…</span> <span class="f10">Spring</span>          <span class="f10">master</span>                                  <span class="f10">192K</span>         <span class="f12">17mo</span> <span class="f0">│</span><span class="f11">│</span> <span class="f3">running  </span> <span class="f3">nothing</span>                              <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">    acme-storage</span><span class="f3"> @acm…</span> <span class="f10">Spring</span>          <span class="f10">master</span><span class="f5"> <i>✚</i>2</span>                               <span class="f10">192K</span>         <span class="f12">17mo</span> <span class="f0">│</span><span class="f11">│</span> <span class="f3">dev port </span> <span class="f2">5173</span><span class="f3"> from Vite default</span>               <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">    acme-ui</span><span class="f3"> @acme-corp</span> <span class="f10">Vite</span>            <span class="f10">master</span><span class="f5"> <i>✚</i>1</span>                                <span class="f10">75M</span>    <span class="f10">75M</span>  <span class="f12">16mo</span> <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">    acme-user</span><span class="f3"> @acme-c…</span> <span class="f10">Spring</span>          <span class="f10">master</span><span class="f5"> <i>✚</i>1</span>                               <span class="f10">192K</span>         <span class="f12">16mo</span> <span class="f0">│</span><span class="f11">│</span> <span class="f3">disk     </span> <span class="f2">20M</span><span class="f3"> measured 5m ago</span>                  <span class="f11">│</span>
+<span class="f0">│</span> <span class="f10 w">  <i>▾</i> archived-services/</span>                 <span class="f3">5 repos</span>                                                   <span class="f0">│</span><span class="f11">│</span> <span class="f3">         </span> <span class="f10">node_modules      </span> <span class="f10">20M</span>               <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">      acme-api-gatewa…</span> <span class="f10">Spring</span>          <span class="f10">dev</span><span class="f3"> ?2</span>                                  <span class="f10">200K</span>           <span class="f12">2y</span> <span class="f0">│</span><span class="f11">│</span> <span class="f3">         </span> <span class="f10">dist              </span> <span class="f10">4K</span>                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">      acme-docs</span><span class="f3"> @lega…</span> <span class="f10">Spring</span>          <span class="f10">dev</span><span class="f5"> <i>✚</i>1</span>                                  <span class="f10">180K</span>           <span class="f12">2y</span> <span class="f0">│</span><span class="f11">│</span> <span class="f3">activity </span> <span class="f12">abandoned</span><span class="f3"> · last change 2025-08-07</span>   <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">      acme-tenant</span><span class="f3"> @le…</span> <span class="f10">Spring</span>          <span class="f10">master</span><span class="f5"> <i>✚</i>1</span><span class="f3"> ?4</span>                            <span class="f10">196K</span>           <span class="f12">2y</span> <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">      acme-tenant-cod…</span> <span class="f10">Spring</span>          <span class="f10">dev</span>                                     <span class="f10">180K</span>           <span class="f12">2y</span> <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">      acme-ui</span><span class="f3"> @legacy…</span> <span class="f10">Vite</span>            <span class="f10">master</span>                                   <span class="f10">45M</span>    <span class="f10">45M</span>    <span class="f12">2y</span> <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">  docs-template</span><span class="f3"> no de…</span> <span class="f10">Next.js</span>         <span class="f10">master</span>                                  <span class="f10">176K</span>           <span class="f12">2y</span> <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">  widget-playground</span><span class="f3"> n…</span> <span class="f10">Next.js</span>         <span class="f10">main</span>                                    <span class="f10">176K</span>         <span class="f5">10mo</span> <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">  news-reader</span>          <span class="f10">Tauri</span>           <span class="f10">main</span>                                    <span class="f10">140M</span>   <span class="f10">140M</span>    <span class="f7">1d</span> <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">  contact-forms</span><span class="f3"> no de…</span> <span class="f10">Vite</span>            <span class="f10">master</span>                                  <span class="f10">188K</span>         <span class="f12">21mo</span> <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">  reference-notes</span><span class="f3"> no …</span> <span class="f10">Next.js</span>         <span class="f10">main</span><span class="f3"> ?1</span>                                 <span class="f10">192K</span>          <span class="f5">6mo</span> <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f10 w"><i>▾</i> practice/</span>                            <span class="f3">1 repo</span>                                                    <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">    practice-notes</span><span class="f3"> no…</span> <span class="f10">Next.js</span>         <span class="f10">main</span><span class="f3"> ?1</span>                                 <span class="f10">204K</span>           <span class="f7">4d</span> <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">  uml-diagrams</span><span class="f3"> @demo-…</span>                 <span class="f10">master</span>                                  <span class="f10">168K</span>         <span class="f12">23mo</span> <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">  local-control-panel</span>  <span class="f10">Go</span>              <span class="f10">main</span>                                    <span class="f10">200K</span>           <span class="f7">1d</span> <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">│</span> <span class="f2">  image-resizer-ui-v2</span><span class="f3">…</span> <span class="f10">Tauri</span>           <span class="f4">no git</span>                                   <span class="f10">40M</span>    <span class="f10">40M</span>   <span class="f5">8mo</span> <span class="f0">│</span><span class="f11">│</span>                                                <span class="f11">│</span>
+<span class="f0">╰───────────────────────────────────────────────────────────────────────────────────────────</span> <span class="f3">1/52</span> <span class="f0">─╯</span><span class="f11">╰───────────────────────────────</span> <span class="f3">enter for more</span> <span class="f11">─╯</span>
+ <span class="f0 w">?</span> <span class="f10">help</span><span class="f3">  </span><span class="f0 w">enter</span> <span class="f10">detail</span><span class="f3">  </span><span class="f0 w">o</span> <span class="f10">open</span><span class="f3">  </span><span class="f0 w">F</span> <span class="f10">finder</span><span class="f3">  </span><span class="f0 w">e</span> <span class="f10">edit</span><span class="f3">  </span><span class="f0 w">c</span> <span class="f10">claude</span><span class="f3">  </span><span class="f0 w">r</span> <span class="f10">run</span><span class="f3">  </span><span class="f0 w">s</span> <span class="f10">stop</span><span class="f3">  </span><span class="f0 w">L</span> <span class="f10">runs</span><span class="f3">  </span><span class="f0 w">f</span> <span class="f10">fetch</span><span class="f3">  </span><span class="f0 w">p</span> <span class="f10">pull</span><span class="f3">  </span><span class="f0 w">x</span> <span class="f10">clean</span><span class="f3">  </span><span class="f0 w">A</span> <span class="f10">archive</span><span class="f3">  </span><span class="f0 w">D</span> <span class="f10">trash</span><span class="f3">  </span><span class="f0 w">/</span> <span class="f10">search</span><span class="f3">  </span><span class="f0 w">1-8</span> <span class="f10">filter</span><span class="f3"> …</span></pre>
+          <pre id="screen-detail" role="img" aria-label="The lcp detail screen for notify-bot: git state, running port, disk use, recent commits and README." hidden><span class="b0"> </span><span class="f1 b0 w">local-control-panel</span><span class="b0"> </span> <span class="f2">37 repos</span><span class="f3"> · </span><span class="f4">7 no git</span><span class="f3"> · </span><span class="f5">15 dirty</span><span class="f3"> · </span><span class="f6">2 unpushed</span><span class="f3"> · </span><span class="f7">1 running</span>                                               <span class="f3">scanned 20:22:05 in 221ms</span>
+<span class="f0">╭─ </span><span class="f0 w">notify-bot</span> <span class="f0">───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮</span>
+<span class="f0">│</span> <span class="f3">path     </span> <span class="f2">notify-bot</span>                                                                                                                               <span class="f0">│</span>
+<span class="f0">│</span> <span class="f3">kind     </span> <span class="f10">git repo</span>                                                                                                                                 <span class="f0">│</span>
+<span class="f0">│</span> <span class="f3">stack    </span> <span class="f10">Node+Docker</span>                                                                                                                              <span class="f0">│</span>
+<span class="f0">│</span>                                                                                                                                                    <span class="f0">│</span>
+<span class="f0">│</span> <span class="f3">branch   </span> <span class="f2">main</span>                                                                                                                                     <span class="f0">│</span>
+<span class="f0">│</span> <span class="f3">upstream </span> <span class="f10">origin/main</span><span class="f3">  ↑0 ↓0</span>                                                                                                                       <span class="f0">│</span>
+<span class="f0">│</span> <span class="f3">changes  </span> <span class="f10">0 modified, 0 untracked</span>                                                                                                                  <span class="f0">│</span>
+<span class="f0">│</span> <span class="f3">commit   </span> <span class="f10">2d ago</span><span class="f3"> · </span><span class="f2">fix rounding in totals</span>                                                                                                          <span class="f0">│</span>
+<span class="f0">│</span> <span class="f3">remote   </span> <span class="f10">git@github.com:demo-dev/notify-bot.git</span>                                                                                                   <span class="f0">│</span>
+<span class="f0">│</span> <span class="f3">owner    </span> <span class="f2">demo-dev</span><span class="f3"> · </span><span class="f7">yours</span>                                                                                                                         <span class="f0">│</span>
+<span class="f0">│</span>                                                                                                                                                    <span class="f0">│</span>
+<span class="f0">│</span> <span class="f3">running  </span> <span class="f7">:4100</span><span class="f10"> node pid 19762</span><span class="f3"> external</span>                                                                                                            <span class="f0">│</span>
+<span class="f0">│</span> <span class="f3">dev port </span> <span class="f2">4100</span><span class="f3"> from .env</span>                                                                                                                           <span class="f0">│</span>
+<span class="f0">│</span>                                                                                                                                                    <span class="f0">│</span>
+<span class="f0">│</span> <span class="f3">disk     </span> <span class="f2">22M</span><span class="f3"> measured 5m ago</span>                                                                                                                      <span class="f0">│</span>
+<span class="f0">│</span> <span class="f3">         </span> <span class="f10">node_modules      </span> <span class="f10">22M</span>                                                                                                                   <span class="f0">│</span>
+<span class="f0">│</span> <span class="f3">activity </span> <span class="f7">active</span><span class="f3"> · last change 2026-10-30</span>                                                                                                          <span class="f0">│</span>
+<span class="f0">│</span>                                                                                                                                                    <span class="f0">│</span>
+<span class="f0">│</span> <span class="f0 w">Uncommitted changes</span>                                                                                                                                <span class="f0">│</span>
+<span class="f0">│</span>   <span class="f3">clean</span>                                                                                                                                            <span class="f0">│</span>
+<span class="f0">│</span>                                                                                                                                                    <span class="f0">│</span>
+<span class="f0">│</span> <span class="f0 w">Recent commits</span>                                                                                                                                     <span class="f0">│</span>
+<span class="f0">│</span>   f6e317c  2 days ago  fix rounding in totals                                                                                                      <span class="f0">│</span>
+<span class="f0">│</span>   6b45843  3 days ago  docker setup                                                                                                                <span class="f0">│</span>
+<span class="f0">│</span>   8ae695b  4 days ago  weekly summary job                                                                                                          <span class="f0">│</span>
+<span class="f0">│</span>   5f4d3b9  5 days ago  category rules                                                                                                              <span class="f0">│</span>
+<span class="f0">│</span>   acc72c0  6 days ago  parse alert rules                                                                                                           <span class="f0">│</span>
+<span class="f0">│</span>   9910238  7 days ago  init bot skeleton                                                                                                           <span class="f0">│</span>
+<span class="f0">│</span>                                                                                                                                                    <span class="f0">│</span>
+<span class="f0">│</span> <span class="f0 w">README</span>                                                                                                                                             <span class="f0">│</span>
+<span class="f0">│</span>   # notify-bot                                                                                                                                     <span class="f0">│</span>
+<span class="f0">│</span>   Demo bot that reads build alerts and posts a short weekly digest to your team chat.                                                              <span class="f0">│</span>
+<span class="f0">╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span> <span class="f3">0%</span> <span class="f0">─╯</span>
+ <span class="f0 w">j/k</span> <span class="f10">scroll</span>  <span class="f0 w">o</span> <span class="f10">open</span>  <span class="f0 w">F</span> <span class="f10">finder</span>  <span class="f0 w">e</span> <span class="f10">edit</span>  <span class="f0 w">c</span> <span class="f10">claude</span>  <span class="f0 w">r</span> <span class="f10">run</span>  <span class="f0 w">s</span> <span class="f10">stop</span>  <span class="f0 w">p</span> <span class="f10">pull</span>  <span class="f0 w">x</span> <span class="f10">clean</span>  <span class="f0 w">A</span> <span class="f10">archive</span>  <span class="f0 w">D</span> <span class="f10">trash</span>  <span class="f0 w">L</span> <span class="f10">runs</span>  <span class="f0 w">R</span> <span class="f10">reload</span>  <span class="f0 w">esc</span> <span class="f10">back</span></pre>
+        </div>
+      </div>
+      <figcaption>Rendered by <code>lcp -snapshot</code> against a demo folder. Every project, account and remote in it is made up.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="band" id="screens">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-key"><kbd>1</kbd> Screens</div>
+      <h2>Read a project's state from one row.</h2>
+      <p>lcp finds every git repo up to three levels under your projects folder, groups folders that only hold repos,
+        and keeps watching for new clones. Git and ports refresh every ten seconds while it's open. Sizes are measured
+        in the background and cached.</p>
+    </div>
+
+    <div class="cols">
+      <div class="col">
+        <span class="col-name">PROJECT</span>
+        <code class="chip"><span class="k-sub">▾</span> demo-client/        <span class="k-dim">9 repos</span>
+    acme-ui <span class="k-dim">@acme-corp</span></code>
+        <p>The path under your root. Folders that only hold repos fold into groups, and <code>archive/</code> starts folded.</p>
+      </div>
+      <div class="col">
+        <span class="col-name">STACK</span>
+        <code class="chip"><span class="k-sub">Tauri  Next.js  Spring  Go  Node+Docker</span></code>
+        <p>Read from files: <code>src-tauri/</code>, <code>next.config.*</code>, <code>pom.xml</code>, <code>Cargo.toml</code>, <code>go.mod</code>, Compose files and package.json dependencies.</p>
+      </div>
+      <div class="col">
+        <span class="col-name">GIT</span>
+        <code class="chip"><span class="k-sub">main</span> <span class="k-yellow">✚2</span> <span class="k-dim">?2</span> <span class="k-peach">↑1</span> <span class="k-sky">↓3</span>    <span class="k-peach">no git</span></code>
+        <p>Branch, modified, untracked, ahead and behind. Folders with no git show up too, so work without history doesn't go unnoticed.</p>
+      </div>
+      <div class="col">
+        <span class="col-name">RUNNING</span>
+        <code class="chip"><span class="k-green">● :8050</span>    <span class="k-mauve k-b">▶</span><span class="k-green"> :4100</span>    <span class="k-teal">◆2</span></code>
+        <p>Listening ports and Docker containers, matched to the project by working directory. <span class="k-b">▶</span> takes the place of <span class="k-b">●</span> when the panel started the server, so it's one you can stop from here.</p>
+      </div>
+      <div class="col">
+        <span class="col-name">DISK · BUILD</span>
+        <code class="chip"><span class="k-sub"> 90M</span>   <span class="k-peach"> 90M</span>     <span class="k-sub">140M</span>   <span class="k-peach">140M</span></code>
+        <p>Total size, and how much of it is <code>node_modules</code>, <code>target</code>, <code>.next</code>, <code>dist</code> and other build folders. Nested repos aren't counted twice.</p>
+      </div>
+      <div class="col">
+        <span class="col-name">AGE</span>
+        <code class="chip"><span class="k-green">2d</span>  <span class="k-blue">51d</span>  <span class="k-yellow">8mo</span>  <span class="k-red">2y</span></code>
+        <p>Days since the last commit, or the newest file change in a folder without git. The colour is its activity band.</p>
+        <code class="chip bands"><span class="k-green">active</span> <span class="k-dim">≤ 14d</span>  <span class="k-blue">warm</span> <span class="k-dim">≤ 90d</span>  <span class="k-yellow">dormant</span> <span class="k-dim">≤ 365d</span>  <span class="k-red">abandoned</span></code>
+      </div>
+    </div>
+
+    <div class="subgrid">
+      <div>
+        <h3>Eight filters, one key each</h3>
+        <dl class="filters">
+          <dt><kbd>1</kbd>All</dt><dd>Everything under the root, as a tree.</dd>
+          <dt><kbd>2</kbd>Dirty</dt><dd>Repos with modified or untracked files.</dd>
+          <dt><kbd>3</kbd>Unpushed</dt><dd>Commits that exist only on this Mac.</dd>
+          <dt><kbd>4</kbd>No git</dt><dd>Folders with no history and no backup.</dd>
+          <dt><kbd>5</kbd>Running</dt><dd>Anything listening on a port or running in Docker.</dd>
+          <dt><kbd>6</kbd>Reclaim</dt><dd>Dormant or abandoned projects still holding build folders.</dd>
+          <dt><kbd>7</kbd>Not mine</dt><dd>Remotes owned by someone other than your <code>github_users</code>.</dd>
+          <dt><kbd>8</kbd>No deps</dt><dd>Projects with dependencies but no <code>node_modules</code>.</dd>
+        </dl>
+        <p class="keyhint"><kbd>S</kbd> cycles the sort: tree, recent, size, build size, changes. <kbd>/</kbd> searches by path.</p>
+      </div>
+      <div>
+        <h3>Four more screens</h3>
+        <ul class="screens">
+          <li><kbd>enter</kbd><span><strong>Project detail.</strong> Uncommitted changes, recent commits, the README's first lines, package.json scripts and the last ten audit entries for that project.</span></li>
+          <li><kbd>L</kbd><span><strong>Runs.</strong> Every dev server the panel started, its PID, pane and state, with a live tail of its log refreshed every second.</span></li>
+          <li><kbd>a</kbd><span><strong>Audit.</strong> The whole log, newest first, with search, a failures-only toggle and a check of the hash chain.</span></li>
+          <li><kbd>?</kbd><span><strong>Help.</strong> Every key and the legend, in two columns on terminals 140 columns or wider.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band alt" id="keys">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-key"><kbd>2</kbd> Keys</div>
+      <h2>One keystroke from the selected row.</h2>
+      <p>Almost everything you do with a project ends in a terminal: an editor, a shell, Claude Code, a dev server.
+        lcp asks <a href="#install">herdr</a> to open those in the project's own workspace, so getting there takes one key.</p>
+    </div>
+    <div class="keys">
+      <div>
+        <h3>Get around</h3>
+        <p class="note">Works with or without herdr.</p>
+        <table>
+          <tr><td><kbd>j</kbd><kbd>k</kbd></td><td>Move down and up</td></tr>
+          <tr><td><kbd>g</kbd><kbd>G</kbd></td><td>Top and bottom; <kbd>ctrl+d</kbd> <kbd>ctrl+u</kbd> by half a page</td></tr>
+          <tr><td><kbd>enter</kbd></td><td>Project detail, or fold a group</td></tr>
+          <tr><td><kbd>/</kbd></td><td>Fuzzy search by path</td></tr>
+          <tr><td><kbd>1</kbd>–<kbd>8</kbd></td><td>Filters</td></tr>
+          <tr><td><kbd>R</kbd></td><td>Rescan everything and remeasure sizes</td></tr>
+          <tr><td><kbd>F</kbd></td><td>Show the folder in Finder</td></tr>
+          <tr><td><kbd>a</kbd><kbd>?</kbd></td><td>Audit log; help</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Work on a project</h3>
+        <p class="note">Talks to the herdr session the panel runs in.</p>
+        <table>
+          <tr><td><kbd>o</kbd></td><td>Switch to the project's workspace, creating it if needed</td></tr>
+          <tr><td><kbd>e</kbd></td><td>Your editor in a new pane there</td></tr>
+          <tr><td><kbd>c</kbd></td><td>Claude Code in a new pane there</td></tr>
+          <tr><td><kbd>r</kbd></td><td>Run the dev server; the first time, you confirm or edit the command</td></tr>
+          <tr><td><kbd>s</kbd></td><td>Stop the run the panel started</td></tr>
+          <tr><td><kbd>L</kbd></td><td>Runs screen with the live log</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Keep things tidy</h3>
+        <p class="note">Anything that moves files asks first.</p>
+        <table>
+          <tr><td><kbd>f</kbd></td><td><code>git fetch --all</code> in every repo with a remote, six at a time</td></tr>
+          <tr><td><kbd>p</kbd></td><td><code>git pull --ff-only</code> for the selected repo</td></tr>
+          <tr><td><kbd>i</kbd></td><td><code>git init</code> a folder that has no git</td></tr>
+          <tr><td><kbd>x</kbd></td><td>Preview build folders, then move them to the Trash</td></tr>
+          <tr><td><kbd>A</kbd></td><td>Archive to <code>archive/</code>, or restore from it</td></tr>
+          <tr><td><kbd>D</kbd></td><td>Move the whole project to the Trash; you type its path to confirm</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="safety">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-key"><kbd>3</kbd> Safety</div>
+      <h2>It moves things to the Trash. It never deletes them.</h2>
+      <p>lcp sits next to work you care about, so the rules below are fixed in code rather than left to settings.
+        It changes nothing in your projects beyond the actions listed here.</p>
+    </div>
+    <div class="safety">
+      <div class="pane-wrap">
+        <div class="pane" role="img" aria-label="The clean confirmation for metrics-console: move node_modules, 20M, to the Trash; leave target alone because it is a symlink, and dist because it holds files tracked in git.">
+          <div class="pane-box">
+            <span class="pane-title">Clean · metrics-console</span>
+<pre>Move these folders to the Trash:
+  node_modules            <span class="k-peach">20M</span>
+
+Left alone:
+  <span class="k-sub">target              </span> <span class="k-dim">symlink, never followed</span>
+  <span class="k-sub">dist                </span> <span class="k-dim">holds files tracked in git</span>
+
+Total <span class="k-peach">20M</span><span class="k-dim">. Reinstall or rebuild to get them back.</span>
+<span class="k-dim">The space is freed when you empty the Trash.</span></pre>
+            <span class="pane-keys"><b>y</b> move to Trash · <b>n</b> cancel</span>
+          </div>
+        </div>
+        <p class="lab-note">What <kbd>x</kbd> shows on <code>metrics-console</code> in the demo. Nothing moves until you press <kbd>y</kbd>, and saying no is logged too.</p>
+      </div>
+      <ul class="rules">
+        <li><h3>Stops only what it started</h3><p>A dev server is stopped by its recorded PID, after checking the process still has the same start time. lcp never kills by name or pattern.</p></li>
+        <li><h3>Cleans from an allowlist</h3><p>Only <code>node_modules</code>, <code>target</code>, <code>.next</code>, <code>dist</code>, <code>build</code>, <code>.turbo</code> and <code>src-tauri/target</code>, directly in the project, and never while it's running.</p></li>
+        <li><h3>Shows the plan, then asks</h3><p>Clean, archive, restore, init and fetch all preview what will happen and wait for <kbd>y</kbd>. Trashing a whole project needs its path typed out.</p></li>
+        <li><h3>Moves, never deletes</h3><p>Clean and trash use the macOS Trash, and archive is a rename. Finder's Put Back undoes them until you empty the Trash.</p></li>
+        <li><h3>Git that can't lose work</h3><p>Fetch, <code>pull --ff-only</code>, init, status and log. Never push, reset, checkout, stash or force. A repo that wants a password fails instead of prompting.</p></li>
+        <li><h3>No shell strings</h3><p>Commands run as argument lists, so paths with spaces are safe. The one shell, the dev-server wrapper, is built with strict quoting.</p></li>
+        <li><h3>Stays inside your folder</h3><p>Every path an action touches must resolve, after symlinks, inside the projects folder or the archive.</p></li>
+        <li><h3>One action at a time</h3><p>While an action runs, the next one is refused with <code>wait</code>. Git status runs without taking the index lock, so your editor never fights it.</p></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="band alt" id="audit">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-key"><kbd>4</kbd> Audit</div>
+      <h2>Every action leaves a trail you can check.</h2>
+      <p>The log is plain JSON Lines in <code>~/.local/state/local-control-panel/audit/</code>, one file per month,
+        append-only and synced after every line. It is never pruned, and the panel never rewrites it.</p>
+    </div>
+    <div class="audit-grid">
+      <ul class="facts">
+        <li><h3>Two lines per action</h3><p>An intent line before it runs and a result line after, sharing one ULID. If the panel crashes halfway, the intent is still there.</p></li>
+        <li><h3>The exact command</h3><p>Each entry records the project, its remote, the argv, the key that triggered it, the outcome, exit code and duration. A clean lists every path it moved and its size.</p></li>
+        <li><h3>A hash chain</h3><p>Each line's <code>prev</code> is the SHA-256 of the line before it. Edit or remove a line and the Audit screen shows exactly where the chain breaks.</p></li>
+        <li><h3>Secrets masked</h3><p>GitHub and API tokens, bearer headers, <code>password=</code>-style values and credentials in URLs become <code>****</code>. Environment variable values are never logged.</p></li>
+      </ul>
+
+      <div class="lab">
+        <div class="lab-term">
+          <div class="lab-top" aria-live="polite">
+            <span class="badge">audit</span><span id="chain-status" class="ok">chain ok · 5 lines</span>
+            <span class="lab-file">2026-11.jsonl · sample</span>
+          </div>
+          <label for="audit-file">Edit any line. The check runs as you type.</label>
+          <textarea id="audit-file" spellcheck="false" autocomplete="off" wrap="off">{"ts":"2026-11-01T09:12:04.118+05:30","id":"01M6AK6DTP6V4N2XG8C5R1T3HD","phase":"event","action":"session.start","cwd":"/Users/dev/Projects","trigger":"launch","app_version":"0.5.0","prev":""}
+{"ts":"2026-11-01T09:14:37.502+05:30","id":"01M6AKB3KY3D9QF0PZK6W2M8JA","phase":"intent","action":"git.pull","project":"team-wiki-content","remote":"git@github.com:demo-dev/team-wiki-content.git","cwd":"/Users/dev/Projects/team-wiki-content","argv":["git","pull","--ff-only"],"trigger":"key:p","details":{"branch":"main","upstream":"origin/main"},"app_version":"0.5.0","prev":"b964e1a999e6b2ddafdfeda47b032ed589dd26f494f4ac6205c477cb5f4c8172"}
+{"ts":"2026-11-01T09:14:37.931+05:30","id":"01M6AKB3KY3D9QF0PZK6W2M8JA","phase":"result","action":"git.pull","project":"team-wiki-content","remote":"git@github.com:demo-dev/team-wiki-content.git","cwd":"/Users/dev/Projects/team-wiki-content","argv":["git","pull","--ff-only"],"trigger":"key:p","outcome":"failed","exit_code":128,"duration_ms":429,"details":{"after":"4f1c9e2a7b3d8e05c6a1f9b2d4e7c8a0b3f6d1e9","before":"4f1c9e2a7b3d8e05c6a1f9b2d4e7c8a0b3f6d1e9","branch":"main","output":"fatal: Not possible to fast-forward, aborting.","remote":"git@github.com:demo-dev/team-wiki-content.git","upstream":"origin/main"},"error":"fatal: Not possible to fast-forward, aborting.","app_version":"0.5.0","prev":"a5203c1583415fde6733e9822d565069d8cc53e009d00b97f65741174e2c528c"}
+{"ts":"2026-11-01T09:16:02.274+05:30","id":"01M6AKDPD2H1C7TWB5N9E0QK2S","phase":"intent","action":"clean","project":"old-site","remote":"git@github.com:demo-dev/old-site.git","cwd":"/Users/dev/Projects/old-site","trigger":"key:x","details":{"preview":{"items":[{"dir":"node_modules","path":"/Users/dev/Projects/old-site/node_modules","size":86245376},{"dir":".next","path":"/Users/dev/Projects/old-site/.next","size":8105984}],"total":94351360}},"app_version":"0.5.0","prev":"b2beadfce6c1139ed7d776b9b13df2e1e17c5160c82af17aac8239a9dc050412"}
+{"ts":"2026-11-01T09:16:03.090+05:30","id":"01M6AKDPD2H1C7TWB5N9E0QK2S","phase":"result","action":"clean","project":"old-site","remote":"git@github.com:demo-dev/old-site.git","cwd":"/Users/dev/Projects/old-site","trigger":"key:x","outcome":"ok","duration_ms":816,"details":{"failed":null,"moved":[{"dir":"node_modules","path":"/Users/dev/Projects/old-site/node_modules","size":86245376},{"dir":".next","path":"/Users/dev/Projects/old-site/.next","size":8105984}],"to":"Trash","total":94351360},"app_version":"0.5.0","prev":"440c1f9da87f5bfe37ac1fc1b02da0a1c7d4bc864f00b9bd6bb526c2683d18e5"}</textarea>
+          <div class="chain"><table id="chain-rows"></table></div>
+        </div>
+        <div class="lab-actions">
+          <button type="button" id="tamper-outcome">Change line 3 from failed to ok</button>
+          <button type="button" id="tamper-delete">Delete line 2</button>
+          <button type="button" id="tamper-reset">Reset</button>
+        </div>
+        <p class="lab-note">A sample log with made-up projects. The check is the same rule the Audit screen uses: hash each line's exact bytes with SHA-256 and compare the result with the next line's <code>prev</code>. It runs in your browser.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="install">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-key"><kbd>5</kbd> Install</div>
+      <h2>Build it, point it at your folder, press a key.</h2>
+      <p>lcp is a single Go binary. It needs no server, opens no network port and keeps its own files outside your projects.</p>
+    </div>
+    <ol class="steps">
+      <li>
+        <div>
+          <h3>Check the requirements</h3>
+          <ul>
+            <li>macOS 15 or later. Cleanup uses the system's <code>/usr/bin/trash</code>.</li>
+            <li>Go 1.24 or later.</li>
+            <li><strong>herdr</strong> 0.8.0 or later for the actions that open panes and run servers. Without it the dashboard still works, the top bar says <code>herdr off</code>, and actions tell you why they can't run.</li>
+          </ul>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Install</h3>
+          <div class="code">
+<pre id="code-install"><span class="k-dim">$</span> go install github.com/10mTech/local-control-panel/cmd/lcp@latest</pre>
+            <button type="button" class="copy" data-copy="code-install">copy</button>
+          </div>
+          <p style="margin-top:14px">Run it again to update. It installs <code>lcp</code> into <code>$(go env GOPATH)/bin</code>; make sure that is on your <code>PATH</code>.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Point it at your projects</h3>
+          <p>The first run writes <code>~/.config/local-control-panel/config.toml</code> with defaults. Every key is optional; set <code>root</code> to your projects folder and <code>github_users</code> to your accounts.</p>
+          <div class="code">
+<pre id="code-config"><span class="k-mauve">root</span> = <span class="k-green">"~/Projects"</span>
+<span class="k-mauve">scan_depth</span> = <span class="k-peach">3</span>                       <span class="k-dim"># how deep to look for git repos</span>
+<span class="k-mauve">archive</span> = <span class="k-green">"~/Projects/archive"</span>
+<span class="k-mauve">editor</span> = <span class="k-green">"nvim"</span>
+<span class="k-mauve">refresh_seconds</span> = <span class="k-peach">10</span>                 <span class="k-dim"># git and port refresh while open</span>
+<span class="k-mauve">github_users</span> = [<span class="k-green">"your-github-name"</span>]  <span class="k-dim"># other owners show as "not mine"</span>
+
+<span class="k-blue">[activity]</span>                           <span class="k-dim"># days since the last change</span>
+<span class="k-mauve">active</span> = <span class="k-peach">14</span>
+<span class="k-mauve">warm</span> = <span class="k-peach">90</span>
+<span class="k-mauve">dormant</span> = <span class="k-peach">365</span>                        <span class="k-dim"># older is abandoned</span>
+
+<span class="k-dim"># Per-project overrides, keyed by path under root</span>
+<span class="k-blue">[projects."news-reader"]</span>
+<span class="k-mauve">dev</span> = [<span class="k-green">"pnpm"</span>, <span class="k-green">"tauri"</span>, <span class="k-green">"dev"</span>]
+<span class="k-mauve">port</span> = <span class="k-peach">1420</span></pre>
+            <button type="button" class="copy" data-copy="code-config">copy</button>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>Run it in a herdr pane</h3>
+          <p>Type <code>lcp</code>. A few flags help outside the terminal UI:</p>
+          <dl class="flags">
+            <dt>-list</dt><dd>Print the scan as plain text and exit.</dd>
+            <dt>-snapshot dashboard -size 160x45</dt><dd>Render one screen to stdout. Also takes <code>help</code>, <code>audit</code>, <code>runs</code> and <code>detail:&lt;path&gt;</code>. The images on this page came from it.</dd>
+            <dt>-config PATH</dt><dd>Use another config file, with its own audit log and runs when it sets <code>state_dir</code>.</dd>
+            <dt>-version</dt><dd>Print the version.</dd>
+          </dl>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section class="band alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Small on purpose.</h2>
+    </div>
+    <div class="scope">
+      <div><h3>Local only</h3><p>No server, no network listener, no telemetry. The only network traffic is the git fetch and pull you ask for.</p></div>
+      <div><h3>Not a window manager</h3><p>herdr owns workspaces and panes. lcp asks it to act and reads its JSON replies.</p></div>
+      <div><h3>Mac, single user</h3><p>It relies on macOS's Trash, <code>lsof</code> and Finder, and it watches one projects folder.</p></div>
+      <div><h3>Its files stay apart</h3><p>Audit log, run logs and caches live in <code>~/.local/state/local-control-panel</code>, so scans and cleanups never touch them.</p></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="pill">lcp</span>
+    <span class="grow">local-control-panel · MIT · Go, Bubble Tea and Lipgloss · Catppuccin Mocha</span>
+    <a href="https://github.com/10mTech/local-control-panel">Source on GitHub</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // Screen tabs over the terminal render.
+  var tabs = [].slice.call(document.querySelectorAll('.term-tabs [role="tab"]'));
+  function show(tab) {
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { show(t); });
+    t.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        var next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        show(next); next.focus(); e.preventDefault();
+      }
+    });
+  });
+
+  // The tab bar marks the section you're in, like the panel's active filter.
+  var links = [].slice.call(document.querySelectorAll('.tabs a[data-key]'));
+  var byId = {};
+  links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        links.forEach(function (a) { a.removeAttribute('aria-current'); });
+        var a = byId[en.target.id];
+        if (a) a.setAttribute('aria-current', 'true');
+      });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    Object.keys(byId).forEach(function (id) { io.observe(document.getElementById(id)); });
+    io.observe(document.getElementById('top'));
+  }
+
+  // Page keys: 1-5 jump, j/k scroll, g/G top and bottom.
+  document.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target;
+    if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.isContentEditable)) return;
+    var link = links.filter(function (a) { return a.dataset.key === e.key; })[0];
+    if (link) { document.querySelector(link.getAttribute('href')).scrollIntoView(); e.preventDefault(); return; }
+    var step = Math.round(window.innerHeight * 0.18);
+    if (e.key === 'j') window.scrollBy({ top: step });
+    else if (e.key === 'k') window.scrollBy({ top: -step });
+    else if (e.key === 'g') window.scrollTo({ top: 0 });
+    else if (e.key === 'G') window.scrollTo({ top: document.body.scrollHeight });
+  });
+
+  // Copy buttons.
+  [].forEach.call(document.querySelectorAll('.copy'), function (b) {
+    b.addEventListener('click', function () {
+      var pre = document.getElementById(b.dataset.copy);
+      var text = pre.textContent.replace(/^\$ /gm, '');
+      function done(msg) { b.textContent = msg; setTimeout(function () { b.textContent = 'copy'; }, 1600); }
+      function select() {
+        var r = document.createRange(); r.selectNodeContents(pre);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        done('selected');
+      }
+      try {
+        navigator.clipboard.writeText(text).then(function () { done('copied'); }, select);
+      } catch (err) { select(); }
+    });
+  });
+
+  // SHA-256, so the chain check runs synchronously and needs no secure context.
+  function sha256(str) {
+    const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+    const bytes = new TextEncoder().encode(str);
+    const len = bytes.length, total = ((len + 9 + 63) >> 6) << 6;
+    const m = new Uint8Array(total); m.set(bytes); m[len] = 0x80;
+    const dv = new DataView(m.buffer);
+    dv.setUint32(total - 8, Math.floor(len / 0x20000000)); dv.setUint32(total - 4, (len << 3) >>> 0);
+    const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+    const W = new Uint32Array(64), rotr = (x, n) => (x >>> n) | (x << (32 - n));
+    for (let o = 0; o < total; o += 64) {
+      for (let i = 0; i < 16; i++) W[i] = dv.getUint32(o + i * 4);
+      for (let i = 16; i < 64; i++) {
+        const s0 = rotr(W[i-15], 7) ^ rotr(W[i-15], 18) ^ (W[i-15] >>> 3);
+        const s1 = rotr(W[i-2], 17) ^ rotr(W[i-2], 19) ^ (W[i-2] >>> 10);
+        W[i] = (W[i-16] + s0 + W[i-7] + s1) >>> 0;
+      }
+      let [a, b, c, d, e, f, g, h] = H;
+      for (let i = 0; i < 64; i++) {
+        const t1 = (h + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + W[i]) >>> 0;
+        const t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+        h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+      }
+      H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0; H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;
+      H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0; H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;
+    }
+    return H.map(x => x.toString(16).padStart(8, '0')).join('');
+  }
+
+  // Chain check, the same rule as internal/audit/reader.go: every line's prev
+  // must be the sha256 of the line before; the first line links to "".
+  var ta = document.getElementById('audit-file');
+  var statusEl = document.getElementById('chain-status');
+  var rowsEl = document.getElementById('chain-rows');
+  var FILE = '2026-11.jsonl';
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function short(h) { return h ? h.slice(0, 10) + '…' : '""'; }
+  function check() {
+    var lines = ta.value.split('\n');
+    var prevLine = null, prevN = 0, ok = true, brokenAt = '', count = 0, html = '';
+    for (var i = 0; i < lines.length; i++) {
+      var raw = lines[i];
+      if (!raw) continue;
+      var n = i + 1, e = null;
+      try { e = JSON.parse(raw); } catch (err) { e = null; }
+      var want = prevLine === null ? '' : sha256(prevLine);
+      var good, cells;
+      if (!e || typeof e !== 'object') {
+        good = false;
+        cells = '<td class="no" colspan="4">not valid JSON</td>';
+      } else {
+        good = e.prev === want;
+        count++;
+        var outcome = e.outcome ? '<span class="o-' + esc(e.outcome) + '">' + esc(e.outcome) + '</span>' : '';
+        var link = good
+          ? '<span class="yes">✓</span> <span class="hash">prev ' + short(e.prev) + (prevLine === null ? ' first line' : ' = sha256(line ' + prevN + ')') + '</span>'
+          : '<span class="no">✗ prev ' + short(e.prev) + ', expected ' + short(want) + '</span>';
+        cells = '<td><span class="ph">' + esc(e.phase || '') + '</span></td>' +
+          '<td><span class="act">' + esc(e.action || '') + '</span> <span class="proj">' + esc(e.project || '') + '</span></td>' +
+          '<td>' + outcome + '</td><td>' + link + '</td>';
+      }
+      if (ok && !good) { ok = false; brokenAt = FILE + ':' + n; }
+      html += '<tr' + (good ? '' : ' class="broken"') + '><td>' + n + '</td>' + cells + '</tr>';
+      prevLine = raw;
+      prevN = n;
+    }
+    rowsEl.innerHTML = html;
+    statusEl.className = ok ? 'ok' : 'bad';
+    statusEl.textContent = ok ? 'chain ok · ' + count + ' lines' : 'chain broken at ' + brokenAt + ' (this line or the one before was changed or removed)';
+  }
+  ta.addEventListener('input', check);
+  function edit(fn) { var l = ta.value.split('\n'); fn(l); ta.value = l.join('\n'); check(); }
+  document.getElementById('tamper-outcome').addEventListener('click', function () {
+    edit(function (l) { if (l[2]) l[2] = l[2].replace('"outcome":"failed"', '"outcome":"ok"'); });
+  });
+  document.getElementById('tamper-delete').addEventListener('click', function () {
+    edit(function (l) { if (l.length > 1) l.splice(1, 1); });
+  });
+  document.getElementById('tamper-reset').addEventListener('click', function () { ta.value = ta.defaultValue; check(); });
+  check();
+})();
+</script>
+</body>
+</html>
