@@ -208,6 +208,11 @@ kbd {
 @media (prefers-reduced-motion: reduce) { .term::after { display: none; } }
 figcaption { margin-top: 12px; font-size: var(--step--1); color: var(--faint); }
 figcaption code { font-size: 0.92em; color: var(--muted); }
+.demo-fig { margin: 0; }
+.demo-video {
+  display: block; width: 100%; height: auto; aspect-ratio: 16 / 9;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--t-bg);
+}
 
 /* ---------- sections ---------- */
 section.band { padding-block: clamp(64px, 9vw, 120px); border-top: 1px solid var(--line); scroll-margin-top: 56px; }
@@ -477,6 +482,22 @@ footer a { color: var(--muted); }
         </div>
       </div>
       <figcaption>Rendered by <code>lcp -snapshot</code> against a demo folder. Every project, account and remote in it is made up.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="band alt" id="demo">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-key">Demo</div>
+      <h2>See it in eighteen seconds.</h2>
+      <p>A real lcp session on the demo folder: filters, a running server, a cleanup, fetch and pull, and the audit log.
+        The screens are captured from the app; the key labels and highlights are added on top.</p>
+    </div>
+    <figure class="demo-fig">
+      <video class="demo-video" src="demo.mp4" poster="demo-poster.jpg" width="1920" height="1080"
+        autoplay muted loop playsinline preload="metadata"
+        aria-label="lcp filtering to dirty and unpushed repos, showing a running server, moving build folders to the Trash, fetching and pulling, and opening the audit log"></video>
     </figure>
   </div>
 </section>
@@ -796,13 +817,21 @@ Total <span class="k-peach">20M</span><span class="k-dim">. Reinstall or rebuild
 <footer>
   <div class="wrap">
     <span class="pill">lcp</span>
-    <span class="grow">local-control-panel · MIT · Go, Bubble Tea and Lipgloss · Catppuccin Mocha</span>
+    <span class="grow">local-control-panel · by <a href="https://github.com/10mTech">10mTech</a> · <a href="https://github.com/10mTech/local-control-panel/blob/main/LICENSE">MIT</a> · Go, Bubble Tea and Lipgloss · Catppuccin Mocha</span>
     <a href="https://github.com/10mTech/local-control-panel">Source on GitHub</a>
   </div>
 </footer>
 
 <script>
 (function () {
+  // The demo video autoplays; with reduced motion it waits for the viewer instead.
+  var demo = document.querySelector('.demo-video');
+  if (demo && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    demo.removeAttribute('autoplay');
+    demo.pause();
+    demo.controls = true;
+  }
+
   // Screen tabs over the terminal render.
   var tabs = [].slice.call(document.querySelectorAll('.term-tabs [role="tab"]'));
   function show(tab) {

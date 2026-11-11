@@ -13,6 +13,8 @@ lcp          # run from any terminal; actions need herdr
 
 > **Status: early (0.x).** macOS only. Expect rough edges and breaking changes before 1.0.
 
+![lcp demo: filtering to dirty and unpushed repos, a running server, moving build folders to the Trash, fetch and pull, and the audit log](docs/demo.gif)
+
 ## Features
 
 - **One screen for all projects:** stack, git state (dirty, ahead, behind, no git), listening ports,
