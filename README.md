@@ -11,7 +11,7 @@ action goes into an append-only, hash-chained audit log that you can read inside
 lcp          # run from any terminal; actions need herdr
 ```
 
-> **Status: pre-release.** macOS only. Expect rough edges and breaking changes before 1.0.
+> **Status: early (0.x).** macOS only. Expect rough edges and breaking changes before 1.0.
 
 ## Features
 
@@ -32,7 +32,7 @@ Needs Go 1.24 or newer, on macOS.
 go install github.com/10mTech/local-control-panel/cmd/lcp@latest
 ```
 
-Prebuilt binaries are coming with the first release.
+Prebuilt binaries are coming in a later release.
 
 ## Uninstall
 

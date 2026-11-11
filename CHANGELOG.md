@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-11
+
+First release.
+
 ### Added
 
 - Project documentation and community files.
@@ -17,4 +21,5 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Troubleshooting on the website.
 - The binary is `lcp`; install it with `go install github.com/10mTech/local-control-panel/cmd/lcp@latest`.
 
-[Unreleased]: https://github.com/10mTech/local-control-panel/commits/main
+[Unreleased]: https://github.com/10mTech/local-control-panel/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/10mTech/local-control-panel/releases/tag/v0.1.0
