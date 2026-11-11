@@ -25,7 +25,8 @@ func (m *Model) loadAudit() tea.Cmd {
 }
 
 func (m *Model) auditListHeight() int {
-	return max(1, m.height-2-auditDetailH-2)
+	// The header line, both boxes' borders, the detail box and the key line take the rest.
+	return max(1, m.height-auditDetailH-6)
 }
 
 func (m *Model) rebuildAudit() {

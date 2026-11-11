@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- A short demo: a video on the website and a GIF in the README.
+
+### Fixed
+
+- The audit screen no longer runs two lines past the terminal and hides its `chain ok` header.
+
 ## [0.1.0] - 2026-11-11
 
 First release.
