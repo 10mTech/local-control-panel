@@ -712,7 +712,7 @@ Total <span class="k-peach">20M</span><span class="k-dim">. Reinstall or rebuild
 <pre id="code-install"><span class="k-dim">$</span> go install github.com/10mTech/local-control-panel/cmd/lcp@latest</pre>
             <button type="button" class="copy" data-copy="code-install">copy</button>
           </div>
-          <p style="margin-top:14px">Run it again to update. It installs <code>lcp</code> into <code>$(go env GOPATH)/bin</code>; make sure that is on your <code>PATH</code>.</p>
+          <p style="margin-top:14px">Run it again to update. It installs <code>lcp</code> into <code>$(go env GOPATH)/bin</code>; make sure that is on your <code>PATH</code>, or set <code>GOBIN</code> to install somewhere that already is.</p>
         </div>
       </li>
       <li>
@@ -765,6 +765,16 @@ Total <span class="k-peach">20M</span><span class="k-dim">. Reinstall or rebuild
         </div>
       </li>
     </ol>
+    <div style="margin-top:56px; max-width:920px">
+      <h3 style="margin-bottom:14px">Troubleshooting</h3>
+      <dl class="flags">
+        <dt>lcp: command not found</dt><dd>Go's bin folder isn't on your <code>PATH</code>. Add <code>export PATH="$HOME/go/bin:$PATH"</code> to <code>~/.zshrc</code> and open a new terminal.</dd>
+        <dt>herdr off</dt><dd>lcp can't reach herdr. Install herdr 0.8.0 or later and start <code>lcp</code> from a herdr pane. The dashboard works without it.</dd>
+        <dt>fetch or pull fails</dt><dd>lcp never prompts for a password. Set up an SSH key or a credential helper, then try again. The error is in the Audit screen (<code>a</code>).</dd>
+        <dt>unknown keys ignored</dt><dd>A key in <code>config.toml</code> is misspelled or not supported. The warning names it.</dd>
+        <dt>anything else</dt><dd>Check <code>debug.log</code> in <code>~/.local/state/local-control-panel</code>, then <a href="https://github.com/10mTech/local-control-panel/issues">open an issue</a>.</dd>
+      </dl>
+    </div>
   </div>
 </section>
 
